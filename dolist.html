@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DO LIST</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Roboto+Condensed:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #181818;
+    --surface2: #222222;
+    --border: #2e2e2e;
+    --text: #e8e8e8;
+    --text-dim: #888;
+    --text-muted: #555;
+
+    --q1: #c0392b;
+    --q1-bg: #1a0a09;
+    --q1-border: #5a1a14;
+
+    --q2: #2980b9;
+    --q2-bg: #091525;
+    --q2-border: #1a4a6a;
+
+    --q3: #e67e22;
+    --q3-bg: #1a1005;
+    --q3-border: #6a3a0a;
+
+    --q4: #7f8c8d;
+    --q4-bg: #111212;
+    --q4-border: #2a3030;
+
+    --accent: #2980b9;
+    --task-item-bg: rgba(255,255,255,0.03);
+    --task-item-bg-hover: rgba(255,255,255,0.055);
+    --task-tag-pill-bg: rgba(255,255,255,0.06);
+    --add-input-bg: rgba(255,255,255,0.04);
+    --modal-backdrop-bg: rgba(0,0,0,0.75);
+    --radius: 4px;
+    --font-mono: 'IBM Plex Mono', monospace;
+    --font-sans: 'Roboto Condensed', sans-serif;
+  }
+
+  body.theme-light {
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --surface2: #f0f2f5;
+    --border: #d9dde3;
+    --text: #111827;
+    --text-dim: #6b7280;
+    --text-muted: #6b7280;
+
+    --q1-bg: #fff1f0;
+    --q1-border: #e9a6a0;
+    --q2-bg: #eef6ff;
+    --q2-border: #9ec2e3;
+    --q3-bg: #fff3e6;
+    --q3-border: #f0b37d;
+    --q4-bg: #f2f6f7;
+    --q4-border: #aebfc1;
+
+    --task-item-bg: rgba(0,0,0,0.03);
+    --task-item-bg-hover: rgba(0,0,0,0.055);
+    --task-tag-pill-bg: rgba(0,0,0,0.06);
+    --add-input-bg: rgba(0,0,0,0.04);
+
+    --modal-backdrop-bg: rgba(0,0,0,0.45);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 16px 28px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    background: var(--surface);
+  }
+  .header-center {
+    display: flex;
+    justify-content: center;
+  }
+  .header-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    align-items: center;
+  }
+  .logo {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .logo-title {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .logo-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    letter-spacing: 0.05em;
+  }
+  .header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .task-count {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-right: 8px;
+  }
+
+  /* BUTTONS */
+  .btn {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--text-dim); color: var(--text); }
+
+  .btn-accent {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+  .btn-accent:hover { background: #4ea3d6; border-color: #4ea3d6; color: #000; }
+  .btn-danger { color: #c0392b; border-color: #5a1a14; }
+  .btn-danger:hover { background: #1a0a09; border-color: #c0392b; }
+
+  /* MAIN GRID */
+  main {
+    flex: 1;
+    padding: 24px 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 16px;
+    min-height: calc(100vh - 61px);
+  }
+
+  /* QUADRANT */
+  .quadrant {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .quadrant:hover { border-color: #3e3e3e; }
+
+  .quadrant.q1 { background: var(--q1-bg); border-color: var(--q1-border); }
+  .quadrant.q2 { background: var(--q2-bg); border-color: var(--q2-border); }
+  .quadrant.q3 { background: var(--q3-bg); border-color: var(--q3-border); }
+  .quadrant.q4 { background: var(--q4-bg); border-color: var(--q4-border); }
+
+  .q-header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .q1 .q-header { border-color: var(--q1-border); }
+  .q2 .q-header { border-color: var(--q2-border); }
+  .q3 .q-header { border-color: var(--q3-border); }
+  .q4 .q-header { border-color: var(--q4-border); }
+
+  .q-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .q-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .q1 .q-tag { color: var(--q1); }
+  .q2 .q-tag { color: var(--q2); }
+  .q3 .q-tag { color: var(--q3); }
+  .q4 .q-tag { color: var(--q4); }
+
+  .q-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .q-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+  .q-badge {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 2px;
+    font-weight: 600;
+  }
+  .q1 .q-badge { background: var(--q1-border); color: var(--q1); }
+  .q2 .q-badge { background: var(--q2-border); color: var(--q2); }
+  .q3 .q-badge { background: var(--q3-border); color: var(--q3); }
+  .q4 .q-badge { background: var(--q4-border); color: var(--q4); }
+
+  /* TASK LIST */
+  .task-list {
+    flex: 1;
+    padding: 10px 12px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 80px;
+    max-height: 340px;
+  }
+  .task-list::-webkit-scrollbar { width: 4px; }
+  .task-list::-webkit-scrollbar-track { background: transparent; }
+  .task-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .quadrant.drag-over {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 2px rgba(41, 128, 185, 0.18);
+  }
+  .task-item.dragging {
+    opacity: 0.55;
+    cursor: grabbing;
+  }
+  .task-item[draggable="true"] { cursor: grab; }
+
+  .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: var(--radius);
+    background: var(--task-item-bg);
+    border: 1px solid transparent;
+    cursor: default;
+    transition: all 0.15s;
+  }
+  .task-item:hover {
+    background: var(--task-item-bg-hover);
+    border-color: var(--border);
+  }
+  .task-item.done {
+    opacity: 0.45;
+  }
+  .task-item.done .task-text {
+    text-decoration: line-through;
+    color: var(--text-muted);
+  }
+
+  .task-check {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    border-radius: 2px;
+    border: 1px solid;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+    transition: all 0.15s;
+    font-size: 10px;
+  }
+  .q1 .task-check { border-color: var(--q1); color: var(--q1); }
+  .q2 .task-check { border-color: var(--q2); color: var(--q2); }
+  .q3 .task-check { border-color: var(--q3); color: var(--q3); }
+  .q4 .task-check { border-color: var(--q4); color: var(--q4); }
+  .task-item.done .task-check { opacity: 0.6; }
+  .task-check:hover { opacity: 0.7; }
+
+  .task-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .task-text {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text);
+    word-break: break-word;
+    line-height: 1.4;
+  }
+  .task-tags {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+  .task-date {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-left: auto;
+    flex-shrink: 0;
+    padding-left: 6px;
+  }
+  .task-tag-pill {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 2px;
+    background: var(--task-tag-pill-bg);
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+  .task-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+    align-items: center;
+  }
+  .task-item:hover .task-actions { opacity: 1; }
+  .task-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 2px 4px;
+    border-radius: 2px;
+    font-size: 12px;
+    transition: all 0.12s;
+    line-height: 1;
+  }
+  .task-btn:hover { background: var(--surface2); color: var(--text); }
+  .task-btn.del:hover { color: #c0392b; }
+
+  /* ADD TASK ZONE */
+  .q-footer {
+    padding: 8px 12px;
+    border-top: 1px solid;
+  }
+  .q1 .q-footer { border-color: var(--q1-border); }
+  .q2 .q-footer { border-color: var(--q2-border); }
+  .q3 .q-footer { border-color: var(--q3-border); }
+  .q4 .q-footer { border-color: var(--q4-border); }
+
+  .add-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .add-input {
+    flex: 1;
+    background: var(--add-input-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    padding: 6px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .add-input::placeholder { color: var(--text-muted); }
+  .add-input:focus { border-color: var(--text-dim); }
+  .add-submit {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: var(--radius);
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .q1 .add-submit:hover { border-color: var(--q1); color: var(--q1); background: var(--q1-border); }
+  .q2 .add-submit:hover { border-color: var(--q2); color: var(--q2); background: var(--q2-border); }
+  .q3 .add-submit:hover { border-color: var(--q3); color: var(--q3); background: var(--q3-border); }
+  .q4 .add-submit:hover { border-color: var(--q4); color: var(--q4); background: var(--q4-border); }
+
+  /* MODAL */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: var(--modal-backdrop-bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+    backdrop-filter: blur(2px);
+  }
+  .modal-backdrop.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: 480px;
+    max-width: 90vw;
+    padding: 28px;
+    transform: translateY(10px);
+    transition: transform 0.2s;
+  }
+  .modal-backdrop.open .modal { transform: translateY(0); }
+  .modal-title {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+  .modal-field { margin-bottom: 16px; }
+  .modal-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .modal-input, .modal-textarea, .modal-select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .modal-textarea { resize: vertical; min-height: 80px; }
+  .modal-input:focus, .modal-textarea:focus, .modal-select:focus { border-color: var(--accent); }
+  .modal-select option { background: var(--surface2); }
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 24px;
+  }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 24px 16px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-style: italic;
+  }
+
+  /* AXIS LABELS */
+  .axis-x, .axis-y {
+    position: fixed;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    pointer-events: none;
+    z-index: 10;
+  }
+  .axis-x {
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .axis-y {
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-90deg);
+    transform-origin: center;
+  }
+  .axis-arrow {
+    display: inline-block;
+    margin: 0 4px;
+  }
+
+  /* Credits (testo piccolo in basso) */
+  .credit {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    text-align: center;
+    opacity: 0.9;
+    padding: 10px 16px 16px;
+  }
+
+  /* TOOLTIP for drag */
+  .drag-hint {
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    padding: 4px 0 10px;
+    opacity: 0.6;
+  }
+
+  /* FILTER BAR */
+  .filter-bar {
+    border-bottom: 1px solid var(--border);
+    padding: 8px 28px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    background: var(--surface);
+  }
+  .filter-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-right: 4px;
+  }
+  .filter-btn {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.12s;
+    letter-spacing: 0.05em;
+  }
+  .filter-btn.active { background: var(--surface2); border-color: var(--text-dim); color: var(--text); }
+  .filter-btn:hover { border-color: var(--text-dim); color: var(--text); }
+  .spacer { flex: 1; }
+  .search-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 5px 10px;
+    outline: none;
+    width: 180px;
+    transition: border-color 0.15s;
+  }
+  .search-input::placeholder { color: var(--text-muted); }
+  .search-input:focus { border-color: var(--text-dim); }
+</style>
+</head>
+<body class="theme-dark">
+
+<header>
+  <div class="logo">
+    <span class="logo-title">DO LIST</span>
+    <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">Tutte</button>
+    <button class="filter-btn" data-filter="active" onclick="setFilter('active', this)">Attive</button>
+    <button class="filter-btn" data-filter="done" onclick="setFilter('done', this)">Completate</button>
+  </div>
+  <div class="header-center">
+    <button class="btn btn-accent" onclick="openAddModal()">+ Nuova attività</button>
+  </div>
+  <div class="header-actions">
+    <span class="task-count" id="taskCount"></span>
+    <span id="saveIndicator" style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.05em;"></span>
+    <button class="btn" onclick="exportJSON()">↓ Backup</button>
+    <button class="btn" onclick="importJSON()">↑ Importa</button>
+    <button class="btn" id="themeToggle" onclick="toggleTheme()">VADER</button>
+    <input class="search-input" id="searchInput" placeholder="Cerca..." oninput="renderAll()">
+  </div>
+</header>
+
+<!-- FILE SCREEN -->
+<div id="fileScreen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:200;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+  <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;">DO LIST // task matrix</div>
+  <div style="font-size:14px;color:var(--text);margin-bottom:20px;">Scegli come iniziare</div>
+  <button class="btn btn-accent" style="width:240px;padding:12px;font-size:12px;" onclick="openExistingFile()">↑ Apri file esistente</button>
+  <button class="btn" style="width:240px;padding:12px;font-size:12px;" onclick="createNewFile()">+ Crea nuovo file</button>
+  <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-top:16px;max-width:340px;text-align:center;line-height:1.7;">
+    I dati verranno salvati automaticamente sul file che scegli,<br>ad ogni modifica.
+  </div>
+</div>
+
+<main id="matrix">
+  <!-- Q1 -->
+  <div class="quadrant q1" id="q1">
+    <div class="q-header">
+      <div class="q-label">
+        <span class="q-tag">Q1 · Urgente &amp; Importante</span>
+        <span class="q-name">Oggi</span>
+        <span class="q-desc">Crisi, scadenze, problemi urgenti</span>
+      </div>
+      <span class="q-badge" id="badge-q1">0</span>
+    </div>
+    <div class="task-list" id="list-q1" ondragover="handleQuadrantDragOver(event,'q1')" ondragleave="handleQuadrantDragLeave(event)" ondrop="handleQuadrantDrop(event,'q1')"></div>
+    <div class="q-footer">
+      <div class="add-row">
+        <input class="add-input" id="input-q1" placeholder="Aggiungi attività…" onkeydown="handleAddKey(event,'q1')">
+        <button class="add-submit" onclick="quickAdd('q1')">＋</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="quadrant q2" id="q2">
+    <div class="q-header">
+      <div class="q-label">
+        <span class="q-tag">Q2 · Non urgente &amp; Importante</span>
+        <span class="q-name">Pianifica</span>
+        <span class="q-desc">Lo puoi fare domani</span>
+      </div>
+      <span class="q-badge" id="badge-q2">0</span>
+    </div>
+    <div class="task-list" id="list-q2" ondragover="handleQuadrantDragOver(event,'q2')" ondragleave="handleQuadrantDragLeave(event)" ondrop="handleQuadrantDrop(event,'q2')"></div>
+    <div class="q-footer">
+      <div class="add-row">
+        <input class="add-input" id="input-q2" placeholder="Aggiungi attività…" onkeydown="handleAddKey(event,'q2')">
+        <button class="add-submit" onclick="quickAdd('q2')">＋</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="quadrant q3" id="q3">
+    <div class="q-header">
+      <div class="q-label">
+        <span class="q-tag">Q3 · Urgente &amp; Non importante</span>
+        <span class="q-name">Delega</span>
+        <span class="q-desc">Interruzioni, richieste altrui</span>
+      </div>
+      <span class="q-badge" id="badge-q3">0</span>
+    </div>
+    <div class="task-list" id="list-q3" ondragover="handleQuadrantDragOver(event,'q3')" ondragleave="handleQuadrantDragLeave(event)" ondrop="handleQuadrantDrop(event,'q3')"></div>
+    <div class="q-footer">
+      <div class="add-row">
+        <input class="add-input" id="input-q3" placeholder="Aggiungi attività…" onkeydown="handleAddKey(event,'q3')">
+        <button class="add-submit" onclick="quickAdd('q3')">＋</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="quadrant q4" id="q4">
+    <div class="q-header">
+      <div class="q-label">
+        <span class="q-tag">Q4 · Non urgente &amp; Non importante</span>
+        <span class="q-name">Ci penserai</span>
+        <span class="q-desc">Sprechi di tempo, distrazioni</span>
+      </div>
+      <span class="q-badge" id="badge-q4">0</span>
+    </div>
+    <div class="task-list" id="list-q4" ondragover="handleQuadrantDragOver(event,'q4')" ondragleave="handleQuadrantDragLeave(event)" ondrop="handleQuadrantDrop(event,'q4')"></div>
+    <div class="q-footer">
+      <div class="add-row">
+        <input class="add-input" id="input-q4" placeholder="Aggiungi attività…" onkeydown="handleAddKey(event,'q4')">
+        <button class="add-submit" onclick="quickAdd('q4')">＋</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="closeModalOnBackdrop(event)">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Nuova attività</div>
+    <div class="modal-field">
+      <label class="modal-label">Attività *</label>
+      <input class="modal-input" id="modalText" placeholder="Descrizione dell'attività…">
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Quadrante *</label>
+      <select class="modal-select" id="modalQuadrant">
+        <option value="q1">Q1 — Fai adesso (Urgente + Importante)</option>
+        <option value="q2">Q2 — Pianifica (Non urgente + Importante)</option>
+        <option value="q3">Q3 — Delega (Urgente + Non importante)</option>
+        <option value="q4">Q4 — Elimina (Non urgente + Non importante)</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Note (opzionale)</label>
+      <textarea class="modal-textarea" id="modalNotes" placeholder="Dettagli, contesto, link…"></textarea>
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Tag / Commessa (opzionale)</label>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input class="modal-input" id="modalTag" placeholder="es. 2518, lavoro, progetto-x…" list="tagSuggestions" style="flex:1;">
+        <datalist id="tagSuggestions"></datalist>
+        <button type="button" class="btn" style="padding:7px 12px;white-space:nowrap;" onclick="openTagManager()" title="Gestisci tag predefiniti">⚙ Tag</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Annulla</button>
+      <button class="btn btn-accent" id="modalSaveBtn" onclick="saveModal()">Aggiungi</button>
+    </div>
+  </div>
+</div>
+
+<!-- TAG MANAGER MODAL -->
+<div class="modal-backdrop" id="tagManagerBackdrop" onclick="closeTagManagerOnBackdrop(event)">
+  <div class="modal" style="width:420px;">
+    <div class="modal-title">⚙ Tag predefiniti</div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">
+      Associa un colore a un tag o numero di commessa. Le attività con quel tag verranno evidenziate con il colore scelto.
+    </p>
+    <div id="tagList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;max-height:240px;overflow-y:auto;"></div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;">
+      <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">Aggiungi tag</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="modal-input" id="newTagName" placeholder="es. 2518" style="flex:1;" onkeydown="if(event.key==='Enter')addPresetTag()">
+        <input type="color" id="newTagColor" value="#2980b9" style="width:42px;height:34px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);cursor:pointer;padding:2px;">
+        <button class="btn btn-accent" onclick="addPresetTag()">Aggiungi</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-accent" onclick="closeTagManager()">Chiudi</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="fileInput" accept=".json" style="display:none" onchange="handleFileImport(event)">
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let tasks = [];
+let editingId = null;
+let currentFilter = 'all';
+let presetTags = {}; // { "2518": "#2980b9", "lavoro": "#27ae60" }
+
+const STORAGE_KEY = 'eisenhower_tasks_v1';
+const THEME_KEY = 'do_list_theme_v1';
+
+function applyTheme(theme) {
+  const body = document.body;
+  body.classList.toggle('theme-light', theme === 'light');
+  body.classList.toggle('theme-dark', theme === 'dark');
+
+  try { localStorage.setItem(THEME_KEY, theme); } catch(e) {}
+
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = theme === 'light' ? 'SKYWALKER' : 'VADER';
+}
+
+function toggleTheme() {
+  const next = document.body.classList.contains('theme-light') ? 'dark' : 'light';
+  applyTheme(next);
+  // Re-render semplice: non cambia dati, ma aggiorna eventuali layout legati alle classi.
+  renderAll();
+}
+
+function initTheme() {
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === 'light' || saved === 'dark') return applyTheme(saved);
+  } catch(e) {}
+
+  // Preferenza sistema come default
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+    return applyTheme('light');
+  }
+  return applyTheme('dark');
+}
+
+// ─── PERSISTENCE ─────────────────────────────────────────────────────────────
+let fileHandle = null;      // FileSystemFileHandle del file aperto
+let saveQueued = false;     // debounce flag
+
+async function saveTasks() {
+  // Fallback localStorage sempre aggiornato
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks, presetTags })); } catch(e) {}
+
+  if (!fileHandle) { setSaveIndicator('saved'); return; }
+
+  // Debounce: se un salvataggio è già in coda, non impilarne un altro
+  if (saveQueued) return;
+  saveQueued = true;
+  setSaveIndicator('saving');
+  await new Promise(r => setTimeout(r, 150)); // attende 150ms
+  saveQueued = false;
+
+  try {
+    const json = JSON.stringify({ version: 1, savedAt: new Date().toISOString(), tasks, presetTags }, null, 2);
+    const writable = await fileHandle.createWritable();
+    await writable.write(json);
+    await writable.close();
+    setSaveIndicator('saved');
+  } catch(e) {
+    setSaveIndicator('error');
+  }
+}
+
+async function loadTasks() {
+  // Se il browser supporta la File System Access API, chiedi il file
+  if (window.showOpenFilePicker) {
+    await promptFileOpen();
+  } else {
+    // Fallback: carica da localStorage
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) { tasks = parsed; } // legacy format
+        else { tasks = parsed.tasks || []; presetTags = parsed.presetTags || {}; }
+      }
+    } catch(e) { tasks = []; }
+  }
+}
+
+async function promptFileOpen() {
+  // Mostra la schermata di scelta file
+  showFileScreen(true);
+}
+
+async function openExistingFile() {
+  try {
+    const [handle] = await window.showOpenFilePicker({
+      types: [{ description: 'DO LIST JSON', accept: { 'application/json': ['.json'] } }]
+    });
+    fileHandle = handle;
+    const file = await handle.getFile();
+    const text = await file.text();
+    try {
+      const data = JSON.parse(text);
+      if (Array.isArray(data)) { tasks = data; presetTags = {}; }
+      else { tasks = data.tasks || []; presetTags = data.presetTags || {}; }
+    } catch(e) { tasks = []; presetTags = {}; }
+    hideFileScreen();
+    renderAll();
+    setSaveIndicator('saved');
+  } catch(e) {
+    if (e.name !== 'AbortError') setSaveIndicator('error');
+  }
+}
+
+async function createNewFile() {
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: 'eisenhower.json',
+      types: [{ description: 'DO LIST JSON', accept: { 'application/json': ['.json'] } }]
+    });
+    fileHandle = handle;
+    tasks = [];
+    await saveTasks();
+    hideFileScreen();
+    renderAll();
+  } catch(e) {
+    if (e.name !== 'AbortError') setSaveIndicator('error');
+  }
+}
+
+function setSaveIndicator(state) {
+  const el = document.getElementById('saveIndicator');
+  if (!el) return;
+  if (state === 'saved') {
+    el.textContent = '● salvato';
+    el.style.color = 'var(--text-muted)';
+  } else if (state === 'saving') {
+    el.textContent = '○ salvataggio…';
+    el.style.color = 'var(--accent)';
+  } else {
+    el.textContent = '✕ errore salvataggio';
+    el.style.color = '#c0392b';
+  }
+}
+
+function showFileScreen(show) {
+  document.getElementById('fileScreen').style.display = show ? 'flex' : 'none';
+  document.getElementById('matrix').style.display = show ? 'none' : 'grid';
+}
+function hideFileScreen() { showFileScreen(false); }
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function today() {
+  return new Date().toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'numeric' });
+}
+
+// ─── FILTER ──────────────────────────────────────────────────────────────────
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderAll();
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function renderAll() {
+  ['q1','q2','q3','q4'].forEach(q => renderQuadrant(q));
+  updateCounts();
+}
+
+function renderQuadrant(q) {
+  const list = document.getElementById('list-' + q);
+  const search = document.getElementById('searchInput').value.toLowerCase().trim();
+
+  let filtered = tasks.filter(t => t.quadrant === q);
+
+  if (currentFilter === 'active') filtered = filtered.filter(t => !t.done);
+  if (currentFilter === 'done')   filtered = filtered.filter(t => t.done);
+  if (search) filtered = filtered.filter(t =>
+    t.text.toLowerCase().includes(search) ||
+    (t.tag && t.tag.toLowerCase().includes(search)) ||
+    (t.notes && t.notes.toLowerCase().includes(search))
+  );
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty-state">Nulla di nuovo sul fronte occidentale</div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(t => taskHTML(t, q)).join('');
+}
+
+function tagPill(name) {
+  const col = presetTags[name.toUpperCase()];
+  const style = col ? `style="background:${col}22;color:${col};border:1px solid ${col}66;"` : '';
+  return `<span class="task-tag-pill" ${style}>${escapeHTML(name)}</span>`;
+}
+
+function taskHTML(t, q) {
+  const checkmark = t.done ? '✓' : '';
+  const doneClass = t.done ? ' done' : '';
+  const notesTitle = t.notes ? ` title="${t.notes.replace(/"/g,"&quot;")}"` : '';
+
+  const suffixTags = t.tag ? t.tag.split(',').map(s => s.trim()).filter(Boolean) : [];
+  const suffixPills = suffixTags.map(tagPill).join('');
+  const notePill = t.notes ? `<span class="task-tag-pill" style="font-style:italic;opacity:.7">nota</span>` : '';
+
+  return `
+  <div class="task-item${doneClass}" id="task-${t.id}"${notesTitle} draggable="true" ondragstart="handleDragStart(event,'${t.id}')" ondragend="handleDragEnd()">
+    <div class="task-check" onclick="toggleDone('${t.id}')">${checkmark}</div>
+    <div class="task-body">
+      <span class="task-text">${renderInlineText(t.text)}</span>
+      ${(suffixPills || notePill) ? `<span class="task-tags">${suffixPills}${notePill}</span>` : ''}
+      <span class="task-date">${t.date}</span>
+    </div>
+    <div class="task-actions">
+      <button class="task-btn" onclick="moveTask('${t.id}')" title="Sposta in altro quadrante">⇄</button>
+      <button class="task-btn" onclick="editTask('${t.id}')" title="Modifica">✎</button>
+      <button class="task-btn del" onclick="deleteTask('${t.id}')" title="Elimina">✕</button>
+    </div>
+  </div>`;
+}
+
+function escapeHTML(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function updateCounts() {
+  ['q1','q2','q3','q4'].forEach(q => {
+    const active = tasks.filter(t => t.quadrant === q && !t.done).length;
+    const total  = tasks.filter(t => t.quadrant === q).length;
+    document.getElementById('badge-' + q).textContent = active + '/' + total;
+  });
+  const active = tasks.filter(t => !t.done).length;
+  document.getElementById('taskCount').textContent = active + ' attive · ' + tasks.length + ' totali';
+}
+
+// ─── DRAG & DROP ─────────────────────────────────────────────────────────
+let dragTaskId = null;
+
+function clearQuadrantDragOver() {
+  document.querySelectorAll('.quadrant.drag-over').forEach(q => q.classList.remove('drag-over'));
+}
+
+function handleDragStart(e, id) {
+  dragTaskId = id;
+  try { e.dataTransfer.setData('text/plain', id); } catch(_) {}
+  e.dataTransfer.effectAllowed = 'move';
+  const el = document.getElementById('task-' + id);
+  if (el) el.classList.add('dragging');
+}
+
+function handleDragEnd() {
+  const el = document.querySelector('.task-item.dragging');
+  if (el) el.classList.remove('dragging');
+  dragTaskId = null;
+  clearQuadrantDragOver();
+}
+
+function handleQuadrantDragOver(e, q) {
+  e.preventDefault(); // abilita la drop
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+  const quad = document.getElementById(q); // q1..q4
+  if (quad) quad.classList.add('drag-over');
+}
+
+function handleQuadrantDrop(e, q) {
+  e.preventDefault();
+  clearQuadrantDragOver();
+
+  const id = (e.dataTransfer && e.dataTransfer.getData('text/plain')) || dragTaskId;
+  if (!id) return;
+
+  const task = tasks.find(task => task.id === id);
+  if (!task) return;
+
+  // Sposta nel quadrante target (senza aprire modali)
+  task.quadrant = q;
+  saveTasks();
+  renderAll();
+
+  const el = document.querySelector('.task-item.dragging');
+  if (el) el.classList.remove('dragging');
+  dragTaskId = null;
+}
+
+// ─── ACTIONS ─────────────────────────────────────────────────────────────────
+
+// Estrae i [tag] dal testo (rimossi dal testo, salvati in tag).
+// I \tag\ restano nel testo grezzo e vengono renderizzati inline come pill.
+// Restituisce { cleanText, tag }
+function parseTagFromText(raw) {
+  const bracketMatches = [...raw.matchAll(/\[([^\]]+)\]/g)];
+  const tags = bracketMatches.map(m => m[1].trim().toUpperCase());
+
+  // \tag\ vengono normalizzati a maiuscolo nel testo ma lasciati nella posizione originale
+  const cleanText = raw
+    .replace(/\[([^\]]+)\]/g, '')           // rimuovi [tag]
+    .replace(/\\([^\\]+)\\/g, (_, t) => `\\${t.trim().toUpperCase()}\\`) // normalizza \tag\ a maiuscolo
+    .replace(/\s{2,}/g, ' ').trim();
+
+  const tag = tags.join(', ');
+  return { cleanText, tag };
+}
+
+// Converte il testo con \tag\ in HTML con pill inline
+function renderInlineText(rawText) {
+  return rawText.split(/\\([^\\]+)\\/).map((chunk, i) => {
+    if (i % 2 === 1) {
+      // è un tag (parti dispari dopo split)
+      return tagPill(chunk);
+    }
+    return escapeHTML(chunk);
+  }).join('');
+}
+
+function quickAdd(q) {
+  const input = document.getElementById('input-' + q);
+  const raw = input.value.trim();
+  if (!raw) return;
+  const { cleanText, tag } = parseTagFromText(raw);
+  tasks.push({ id: uid(), text: cleanText, quadrant: q, done: false, date: today(), tag, notes: '' });
+  input.value = '';
+  saveTasks();
+  renderAll();
+}
+
+function handleAddKey(e, q) {
+  if (e.key === 'Enter') quickAdd(q);
+}
+
+function toggleDone(id) {
+  const t = tasks.find(t => t.id === id);
+  if (t) { t.done = !t.done; saveTasks(); renderAll(); }
+}
+
+function deleteTask(id) {
+  tasks = tasks.filter(t => t.id !== id);
+  saveTasks();
+  renderAll();
+}
+
+function editTask(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Modifica attività';
+  document.getElementById('modalSaveBtn').textContent = 'Salva';
+  document.getElementById('modalText').value = t.text;
+  document.getElementById('modalQuadrant').value = t.quadrant;
+  document.getElementById('modalNotes').value = t.notes || '';
+  document.getElementById('modalTag').value = t.tag || '';
+  openModal();
+}
+
+function moveTask(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Sposta attività';
+  document.getElementById('modalSaveBtn').textContent = 'Sposta';
+  document.getElementById('modalText').value = t.text;
+  document.getElementById('modalQuadrant').value = t.quadrant;
+  document.getElementById('modalNotes').value = t.notes || '';
+  document.getElementById('modalTag').value = t.tag || '';
+  openModal();
+}
+
+// ─── MODAL ────────────────────────────────────────────────────────────────────
+function openAddModal(preQ) {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Nuova attività';
+  document.getElementById('modalSaveBtn').textContent = 'Aggiungi';
+  document.getElementById('modalText').value = '';
+  document.getElementById('modalQuadrant').value = preQ || 'q1';
+  document.getElementById('modalNotes').value = '';
+  document.getElementById('modalTag').value = '';
+  openModal();
+}
+
+function openModal() {
+  refreshTagSuggestions();
+  document.getElementById('modalBackdrop').classList.add('open');
+  setTimeout(() => document.getElementById('modalText').focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById('modalBackdrop').classList.remove('open');
+  editingId = null;
+}
+
+function closeModalOnBackdrop(e) {
+  if (e.target === document.getElementById('modalBackdrop')) closeModal();
+}
+
+function saveModal() {
+  const rawText = document.getElementById('modalText').value.trim();
+  if (!rawText) { document.getElementById('modalText').focus(); return; }
+  const q     = document.getElementById('modalQuadrant').value;
+  const notes = document.getElementById('modalNotes').value.trim();
+
+  // Se il campo tag è vuoto, prova a estrarlo dal testo con [...] o \...\
+  let { cleanText, tag } = parseTagFromText(rawText);
+  const manualTag = document.getElementById('modalTag').value.trim().toUpperCase();
+  if (manualTag) { tag = manualTag; cleanText = rawText; }
+
+  if (editingId) {
+    const t = tasks.find(t => t.id === editingId);
+    if (t) { t.text = cleanText; t.quadrant = q; t.notes = notes; t.tag = tag; t.prefixTags = undefined; }
+  } else {
+    tasks.push({ id: uid(), text: cleanText, quadrant: q, done: false, date: today(), tag, notes });
+  }
+
+  saveTasks();
+  renderAll();
+  closeModal();
+}
+
+// ─── TAG MANAGER ─────────────────────────────────────────────────────────────
+function openTagManager() {
+  renderTagList();
+  refreshTagSuggestions();
+  document.getElementById('tagManagerBackdrop').classList.add('open');
+  setTimeout(() => document.getElementById('newTagName').focus(), 100);
+}
+
+function closeTagManager() {
+  document.getElementById('tagManagerBackdrop').classList.remove('open');
+  refreshTagSuggestions();
+  renderAll(); // aggiorna i colori nelle task
+}
+
+function closeTagManagerOnBackdrop(e) {
+  if (e.target === document.getElementById('tagManagerBackdrop')) closeTagManager();
+}
+
+function renderTagList() {
+  const container = document.getElementById('tagList');
+  const entries = Object.entries(presetTags);
+  if (entries.length === 0) {
+    container.innerHTML = `<div style="font-size:12px;color:var(--text-muted);font-style:italic;padding:8px 0;">Nessun tag predefinito.</div>`;
+    return;
+  }
+  container.innerHTML = entries.map(([name, color]) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:var(--radius);background:var(--surface2);border:1px solid var(--border);">
+      <div style="width:14px;height:14px;border-radius:2px;background:${color};flex-shrink:0;"></div>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:600;color:${color};flex:1;">${escapeHTML(name)}</span>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);">${color}</span>
+      <input type="color" value="${color}" style="width:28px;height:24px;border:1px solid var(--border);border-radius:2px;background:transparent;cursor:pointer;padding:1px;" onchange="updateTagColor('${escapeHTML(name)}', this.value)" title="Cambia colore">
+      <button class="task-btn del" onclick="deletePresetTag('${escapeHTML(name)}')" title="Elimina tag" style="opacity:1;">✕</button>
+    </div>
+  `).join('');
+}
+
+function addPresetTag() {
+  const name = document.getElementById('newTagName').value.trim().toUpperCase();
+  const color = document.getElementById('newTagColor').value;
+  if (!name) { document.getElementById('newTagName').focus(); return; }
+  presetTags[name] = color;
+  document.getElementById('newTagName').value = '';
+  saveTasks();
+  renderTagList();
+}
+
+function deletePresetTag(name) {
+  delete presetTags[name];
+  saveTasks();
+  renderTagList();
+}
+
+function updateTagColor(name, color) {
+  presetTags[name] = color;
+  saveTasks();
+  renderTagList();
+  renderAll();
+}
+
+function refreshTagSuggestions() {
+  const dl = document.getElementById('tagSuggestions');
+  if (!dl) return;
+  dl.innerHTML = Object.keys(presetTags).map(t => `<option value="${escapeHTML(t)}">`).join('');
+}
+
+// ─── KEYBOARD SHORTCUTS ───────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeModal();
+    closeTagManager();
+  }
+  if (e.key === 'Enter' && document.getElementById('modalBackdrop').classList.contains('open')) {
+    const active = document.activeElement;
+    if (active && active.tagName !== 'TEXTAREA' && active.tagName !== 'SELECT') saveModal();
+  }
+  if (e.key === 'n' && !e.ctrlKey && !e.metaKey && document.activeElement.tagName === 'BODY') {
+    openAddModal();
+  }
+});
+
+// ─── EXPORT / IMPORT ─────────────────────────────────────────────────────────
+async function exportJSON() {
+  const data = { version: 1, exportedAt: new Date().toISOString(), tasks, presetTags };
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const suggestedName = 'eisenhower_backup_' + new Date().toISOString().slice(0,10) + '.json';
+
+  if (window.showSaveFilePicker) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName,
+        types: [{ description: 'File JSON', accept: { 'application/json': ['.json'] } }]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+    } catch (e) {
+      if (e.name !== 'AbortError') throw e;
+    }
+  } else {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = suggestedName;
+    a.click();
+  }
+}
+
+function importJSON() {
+  document.getElementById('fileInput').click();
+}
+
+function handleFileImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      const imported = Array.isArray(data) ? data : (data.tasks || []);
+      if (!imported.length) { alert('Nessuna attività trovata nel file.'); return; }
+      if (confirm(`Importare ${imported.length} attività? Verranno aggiunte a quelle esistenti.`)) {
+        // Re-generate IDs to avoid conflicts
+        imported.forEach(t => { if (!t.id) t.id = uid(); });
+        tasks = tasks.concat(imported);
+        saveTasks();
+        renderAll();
+      }
+    } catch(err) { alert('Errore: file JSON non valido.'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+(async () => {
+  initTheme();
+  await loadTasks();
+  if (!window.showOpenFilePicker) {
+    // Fallback: nessuna File System API, carica da localStorage e vai
+    renderAll();
+    setSaveIndicator('saved');
+  }
+  // Se c'è la File System API, renderAll() viene chiamato dopo la scelta del file
+})();
+</script>
+
+<div class="credit">Giacomo Peli - 2026</div>
+</body>
+</html>
