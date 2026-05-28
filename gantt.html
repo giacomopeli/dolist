@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GANTT PLANNER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Roboto+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1e1e1e;
+    --surface: #2c2c2e;
+    --surface2: #3a3a3c;
+    --surface3: #48484a;
+    --border: rgba(255,255,255,0.1);
+    --border-strong: rgba(255,255,255,0.16);
+    --text: #f5f5f7;
+    --text-dim: #98989d;
+    --text-muted: #636366;
+    --glow: rgba(255,255,255,0.03);
+
+    --accent: #0a84ff;
+    --accent-glow: rgba(10,132,255,0.2);
+    --grid-line: rgba(255,255,255,0.06);
+    --grid-line-strong: rgba(255,255,255,0.12);
+    --weekend-bg: rgba(255,255,255,0.025);
+    --today-line: #ff453a;
+    --row-hover: rgba(255,255,255,0.03);
+
+    --radius: 10px;
+    --radius-sm: 7px;
+    --radius-xs: 4px;
+    --font-mono: 'IBM Plex Mono', monospace;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-ui: 'Roboto Condensed', sans-serif;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-lg: 0 16px 48px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4);
+
+    --day-w: 34px;       /* larghezza di una colonna giorno */
+    --label-w: 280px;    /* larghezza colonna sinistra (commessa/task) */
+    --row-h: 38px;
+  }
+
+  body.theme-light {
+    --bg: #f2f2f7;
+    --surface: rgba(255,255,255,0.85);
+    --surface2: rgba(255,255,255,0.6);
+    --surface3: rgba(255,255,255,0.4);
+    --border: rgba(0,0,0,0.08);
+    --border-strong: rgba(0,0,0,0.14);
+    --text: #1c1c1e;
+    --text-dim: #6e6e73;
+    --text-muted: #aeaeb2;
+    --glow: rgba(0,0,0,0.02);
+
+    --grid-line: rgba(0,0,0,0.06);
+    --grid-line-strong: rgba(0,0,0,0.12);
+    --weekend-bg: rgba(0,0,0,0.02);
+    --row-hover: rgba(0,0,0,0.025);
+
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ─── HEADER ─────────────────────────────────────────── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; order: 1; }
+  .logo-title {
+    font-family: var(--font-sans);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--accent);
+  }
+  .nav-tabs { display: flex; gap: 4px; }
+  .nav-tab {
+    font-family: var(--font-ui);
+    font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+    padding: 5px 11px; border-radius: var(--radius-sm);
+    border: 1px solid transparent; background: transparent;
+    color: var(--text-muted); cursor: pointer;
+    transition: all 0.18s cubic-bezier(0.25,0.46,0.45,0.94);
+  }
+  .nav-tab:hover { color: var(--text); background: var(--surface2); }
+  .nav-tab.active { color: var(--text); background: var(--surface3); border-color: var(--border-strong); }
+
+  .header-center { display: flex; justify-content: center; order: 2; }
+  .header-actions {
+    display: flex; justify-content: flex-end; gap: 6px;
+    align-items: center; order: 3; margin-left: auto; flex-wrap: wrap;
+  }
+
+  /* ─── BUTTONS ────────────────────────────────────────── */
+  .btn {
+    font-family: var(--font-sans);
+    font-size: 12px; font-weight: 500; letter-spacing: 0.01em;
+    padding: 7px 14px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface2);
+    color: var(--text-dim);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.18s cubic-bezier(0.25,0.46,0.45,0.94);
+    white-space: nowrap;
+  }
+  .btn:hover { color: var(--text); background: var(--surface3); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+  .btn:active { transform: translateY(0); }
+  .btn-accent { background: var(--accent); border-color: transparent; color: #fff; }
+  .btn-accent:hover { background: var(--accent); filter: brightness(1.1); color:#fff; }
+  .btn-sm { padding: 5px 9px; font-size: 11px; }
+  .btn-danger { color: #ff6961; border-color: rgba(255,69,58,0.3); }
+  .btn-danger:hover { background: rgba(255,69,58,0.12); color:#ff453a; }
+
+  .search-input {
+    font-family: var(--font-mono); font-size: 12px;
+    padding: 6px 12px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong);
+    background: var(--surface2); color: var(--text);
+    width: 160px; transition: all 0.18s;
+  }
+  .search-input:focus { outline: none; border-color: var(--accent); width: 220px; }
+
+  #saveIndicator {
+    font-family: var(--font-ui); font-size: 11px; font-weight: 600;
+    color: var(--text-muted); letter-spacing: 0.04em;
+  }
+
+  /* ─── ZOOM / RANGE controls ──────────────────────────── */
+  .toolbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-wrap: wrap;
+  }
+  .toolbar-group { display: flex; align-items: center; gap: 6px; }
+  .toolbar-label {
+    font-family: var(--font-ui); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted);
+  }
+  .seg {
+    display: inline-flex; border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm); overflow: hidden;
+  }
+  .seg button {
+    font-family: var(--font-ui); font-size: 11px; font-weight: 600;
+    padding: 5px 12px; background: var(--surface2); color: var(--text-dim);
+    border: none; cursor: pointer; transition: all 0.15s;
+  }
+  .seg button + button { border-left: 1px solid var(--border-strong); }
+  .seg button.active { background: var(--accent); color: #fff; }
+  .seg button:hover:not(.active) { background: var(--surface3); color: var(--text); }
+
+  /* ─── GANTT ──────────────────────────────────────────── */
+  main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+  .gantt-wrap { flex: 1; overflow: auto; position: relative; }
+  .gantt {
+    position: relative;
+    min-width: max-content;
+    font-family: var(--font-sans);
+  }
+
+  /* timeline header */
+  .timeline-head {
+    position: sticky; top: 0; z-index: 30;
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-strong);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .corner {
+    position: sticky; left: 0; z-index: 31;
+    width: var(--label-w); min-width: var(--label-w); flex: 0 0 var(--label-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border-strong);
+    display: flex; align-items: center; padding: 0 16px;
+    font-family: var(--font-ui); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim);
+  }
+  .months-days { display: flex; flex-direction: column; }
+  .months { display: flex; height: 24px; }
+  .month-cell {
+    font-family: var(--font-ui); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--text);
+    display: flex; align-items: center; padding-left: 8px;
+    border-right: 1px solid var(--grid-line-strong);
+    border-bottom: 1px solid var(--grid-line);
+    overflow: hidden; white-space: nowrap;
+  }
+  .days { display: flex; height: 28px; }
+  .day-cell {
+    width: var(--day-w); min-width: var(--day-w); flex: 0 0 var(--day-w);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border-right: 1px solid var(--grid-line);
+    font-family: var(--font-mono); font-size: 10px; line-height: 1.1; color: var(--text-dim);
+  }
+  .day-cell .dow { font-size: 8px; color: var(--text-muted); text-transform: uppercase; }
+  .day-cell.weekend { background: var(--weekend-bg); }
+  .day-cell.today { color: var(--today-line); font-weight: 600; }
+
+  /* rows */
+  .gantt-body { position: relative; }
+  .grp-head {
+    position: sticky; left: 0; z-index: 20;
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+    width: 100%;
+  }
+  .grp-head .caret { font-size: 10px; color: var(--text-muted); transition: transform 0.15s; }
+  .grp-head.collapsed .caret { transform: rotate(-90deg); }
+  .grp-dot { width: 9px; height: 9px; border-radius: 3px; flex: 0 0 auto; }
+  .grp-name { font-weight: 600; font-size: 13px; color: var(--text); }
+  .grp-meta { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); margin-left: 4px; }
+  .grp-actions { margin-left: auto; display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
+  .grp-head:hover .grp-actions { opacity: 1; }
+
+  .row {
+    display: flex; align-items: stretch;
+    height: var(--row-h);
+    border-bottom: 1px solid var(--grid-line);
+    position: relative;
+  }
+  .row:hover { background: var(--row-hover); }
+  .row-label {
+    position: sticky; left: 0; z-index: 15;
+    width: var(--label-w); min-width: var(--label-w); flex: 0 0 var(--label-w);
+    background: var(--bg);
+    border-right: 1px solid var(--border-strong);
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 12px 0 30px;
+    overflow: hidden;
+  }
+  .row:hover .row-label { background: var(--surface); }
+  .row-label .assignee {
+    width: 22px; height: 22px; border-radius: 50%; flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-ui); font-size: 9px; font-weight: 700; color: #fff;
+  }
+  .row-label .task-name { font-size: 12.5px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row-track { position: relative; flex: 1; }
+
+  /* grid overlay lines inside track area */
+  .grid-bg {
+    position: absolute; inset: 0; z-index: 0;
+    pointer-events: none;
+    background-image: repeating-linear-gradient(
+      to right, transparent 0, transparent calc(var(--day-w) - 1px),
+      var(--grid-line) calc(var(--day-w) - 1px), var(--grid-line) var(--day-w)
+    );
+  }
+
+  .bar {
+    position: absolute; top: 7px; height: calc(var(--row-h) - 16px);
+    border-radius: var(--radius-xs);
+    display: flex; align-items: center; padding: 0 8px;
+    font-family: var(--font-sans); font-size: 11px; font-weight: 500; color: #fff;
+    white-space: nowrap; overflow: hidden;
+    cursor: pointer; z-index: 5;
+    box-shadow: var(--shadow-sm);
+    transition: filter 0.15s, transform 0.1s;
+  }
+  .bar:hover { filter: brightness(1.12); }
+  .bar .bar-progress {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: rgba(255,255,255,0.22); border-radius: var(--radius-xs) 0 0 var(--radius-xs);
+    z-index: -1;
+  }
+  .bar-label { position: relative; z-index: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+
+  /* today vertical line */
+  .today-line {
+    position: absolute; top: 0; bottom: 0; width: 2px;
+    background: var(--today-line); z-index: 8; pointer-events: none;
+    box-shadow: 0 0 8px rgba(255,69,58,0.5);
+  }
+  .today-line::before {
+    content: ''; position: absolute; top: -1px; left: -3px;
+    width: 8px; height: 8px; border-radius: 50%; background: var(--today-line);
+  }
+
+  .empty-state {
+    padding: 60px 20px; text-align: center; color: var(--text-muted);
+    font-family: var(--font-mono); font-size: 13px;
+  }
+
+  /* ─── FILE SCREEN ────────────────────────────────────── */
+  #fileScreen {
+    position: fixed; inset: 0; z-index: 500;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--bg); gap: 28px; padding: 24px; text-align: center;
+  }
+  #fileScreen .fs-title { font-size: 22px; font-weight: 600; letter-spacing: 0.04em; color: var(--accent); text-transform: uppercase; }
+  #fileScreen .fs-sub { font-size: 14px; color: var(--text-dim); }
+  #fileScreen .fs-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  #fileScreen .fs-btn {
+    font-family: var(--font-sans); font-size: 14px; font-weight: 500;
+    padding: 14px 24px; border-radius: var(--radius);
+    border: 1px solid var(--border-strong); background: var(--surface2); color: var(--text);
+    cursor: pointer; transition: all 0.18s; min-width: 200px;
+  }
+  #fileScreen .fs-btn:hover { background: var(--surface3); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  #fileScreen .fs-btn.primary { background: var(--accent); border-color: transparent; color: #fff; }
+  #fileScreen .fs-note { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); line-height: 1.6; max-width: 360px; }
+
+  /* ─── MODAL ──────────────────────────────────────────── */
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 400;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-backdrop.open { display: flex; }
+  /* Il pannello Impostazioni resta sotto i modali che apre (utente, commessa) */
+  #settingsBackdrop { z-index: 400; }
+  #userBackdrop, #commessaBackdrop, #taskBackdrop { z-index: 420; }
+  #confirmBackdrop { z-index: 450; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border-strong);
+    border-radius: var(--radius); box-shadow: var(--shadow-lg);
+    width: 100%; max-width: 460px; max-height: 90vh; overflow: auto;
+    padding: 22px;
+  }
+  .modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block; font-family: var(--font-ui); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px;
+  }
+  .field input, .field select, .field textarea {
+    width: 100%; font-family: var(--font-sans); font-size: 13px;
+    padding: 8px 10px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong); background: var(--surface2); color: var(--text);
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--accent); }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field { flex: 1; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 8px 20px; text-align: center;
+    font-family: var(--font-mono); font-size: 10px; color: var(--text-muted);
+    background: var(--surface);
+  }
+
+  /* ─── SETTINGS PANEL ─────────────────────────────────── */
+  .set-section { padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .set-section:last-child { border-bottom: none; }
+  .set-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .set-title { font-family: var(--font-ui); font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text); }
+  .set-head .btn { margin-left: auto; }
+  .set-sub { font-size: 11px; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; }
+  .set-list { display: flex; flex-direction: column; gap: 6px; }
+  .set-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: var(--radius-sm);
+    background: var(--surface2); border: 1px solid var(--border);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .set-item:hover { background: var(--surface3); transform: translateX(2px); }
+  .set-swatch { width: 14px; height: 14px; border-radius: var(--radius-xs); flex: 0 0 auto; }
+  .set-item-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .set-item-meta { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); margin-left: auto; }
+  .set-del {
+    flex: 0 0 auto; margin-left: 4px;
+    width: 24px; height: 24px; border-radius: var(--radius-xs);
+    border: 1px solid transparent; background: transparent;
+    color: var(--text-muted); font-size: 12px; line-height: 1; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .set-del:hover { background: rgba(255,69,58,0.15); color: #ff453a; border-color: rgba(255,69,58,0.3); }
+  .set-empty { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); padding: 8px 2px; }
+
+  /* ─── DRAG ON BARS ───────────────────────────────────── */
+  .bar.dragging { opacity: 0.85; box-shadow: var(--shadow-md); cursor: grabbing !important; z-index: 50; }
+  .bar { cursor: grab; }
+  .bar-handle {
+    position: absolute; top: 0; bottom: 0; width: 7px; z-index: 2;
+    cursor: ew-resize; opacity: 0; transition: opacity 0.12s;
+  }
+  .bar-handle.left { left: 0; }
+  .bar-handle.right { right: 0; }
+  .bar:hover .bar-handle { opacity: 1; }
+  .bar-handle::after {
+    content: ''; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%); width: 2px; height: 45%;
+    background: rgba(255,255,255,0.7); border-radius: 2px;
+  }
+  .drag-ghost {
+    position: fixed; z-index: 600; pointer-events: none;
+    font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+    background: var(--accent); color: #fff; padding: 3px 8px;
+    border-radius: var(--radius-xs); box-shadow: var(--shadow-md);
+    white-space: nowrap;
+  }
+
+  /* ─── PRINT ──────────────────────────────────────────── */
+  @page { size: A4 landscape; margin: 10mm; }
+  @media print {
+    :root { --day-w: 22px; }
+    header, .toolbar, footer, #fileScreen, .modal-backdrop, .grp-actions { display: none !important; }
+    body { background: #fff !important; color: #000 !important; }
+    main { overflow: visible !important; display: block !important; }
+    .gantt-wrap { overflow: visible !important; height: auto !important; }
+    .gantt { min-width: 0 !important; }
+
+    /* Forza il tema chiaro in stampa per risparmiare inchiostro */
+    body { --bg:#fff; --surface:#fff; --surface2:#f5f5f5; --surface3:#ececec;
+           --text:#000; --text-dim:#333; --text-muted:#666;
+           --border:rgba(0,0,0,0.15); --border-strong:rgba(0,0,0,0.3);
+           --grid-line:rgba(0,0,0,0.12); --grid-line-strong:rgba(0,0,0,0.25);
+           --weekend-bg:rgba(0,0,0,0.04); }
+
+    .timeline-head, .corner, .row-label { background:#fff !important; backdrop-filter:none !important; }
+    .bar, .bar-progress, .assignee, .grp-dot, .day-cell.weekend, .set-swatch {
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .bar-label { color:#fff !important; text-shadow:none !important; }
+    .bar-handle { display:none !important; }
+    .row, .grp-head { page-break-inside: avoid; }
+    .today-line { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    /* Titolo stampato in cima */
+    #printTitle { display:block !important; }
+  }
+  #printTitle { display:none; padding:0 0 8px; font-family:var(--font-ui); }
+  #printTitle .pt-name { font-size:18px; font-weight:700; letter-spacing:0.04em; }
+  #printTitle .pt-date { font-size:11px; color:#666; font-family:var(--font-mono); }
+
+  @media (max-width: 720px) {
+    .search-input { display: none; }
+    :root { --label-w: 180px; }
+  }
+</style>
+</head>
+<body class="theme-dark">
+
+<!-- ─── FILE SCREEN ─────────────────────────────────── -->
+<div id="fileScreen">
+  <div class="fs-title">GANTT PLANNER</div>
+  <div class="fs-sub">Scegli come iniziare</div>
+  <div class="fs-actions">
+    <button class="fs-btn" onclick="openExistingFile()">↑ Apri file esistente</button>
+    <button class="fs-btn primary" onclick="createNewFile()">+ Crea nuovo file</button>
+  </div>
+  <div class="fs-note">I dati verranno salvati automaticamente sul file che scegli, ad ogni modifica.</div>
+</div>
+
+<!-- ─── HEADER ──────────────────────────────────────── -->
+<header style="display:none;" id="appHeader">
+  <div class="logo">
+    <span class="logo-title" id="logoTitle">GANTT PLANNER</span>
+    <div class="nav-tabs">
+      <button class="nav-tab active" id="tabCommesse" onclick="setGrouping('commessa', this)">PER COMMESSA</button>
+      <button class="nav-tab" id="tabUtenti" onclick="setGrouping('assignee', this)">PER UTENTE</button>
+    </div>
+  </div>
+  <div class="header-center">
+    <button class="btn btn-accent" onclick="openTaskModal()" title="Nuova azione">+ Azione</button>
+  </div>
+  <div class="header-actions">
+    <span id="saveIndicator"></span>
+    <button class="btn btn-sm" onclick="openCommessaModal()">+ Commessa</button>
+    <button class="btn btn-sm" onclick="exportJSON()">↓ Backup</button>
+    <button class="btn btn-sm" onclick="importJSON()">↑ Importa</button>
+    <button class="btn btn-sm" onclick="exportCSV()">↓ CSV</button>
+    <button class="btn btn-sm" onclick="printGantt()">⎙ Stampa</button>
+    <button class="btn btn-sm" id="themeToggle" onclick="toggleTheme()">VADER</button>
+    <button class="btn btn-sm" onclick="openSettings()">⚙ Impostazioni</button>
+    <input class="search-input" id="searchInput" placeholder="Cerca..." oninput="render()">
+  </div>
+</header>
+
+<!-- ─── TOOLBAR ─────────────────────────────────────── -->
+<div class="toolbar" style="display:none;" id="appToolbar">
+  <div class="toolbar-group">
+    <span class="toolbar-label">Zoom</span>
+    <div class="seg" id="zoomSeg">
+      <button onclick="setZoom(20, this)">S</button>
+      <button class="active" onclick="setZoom(34, this)">M</button>
+      <button onclick="setZoom(52, this)">L</button>
+    </div>
+  </div>
+  <div class="toolbar-group">
+    <span class="toolbar-label">Vista</span>
+    <div class="seg" id="rangeSeg">
+      <button class="active" onclick="setRange('month', this)">Mese</button>
+      <button onclick="setRange('quarter', this)">Trimestre</button>
+      <button onclick="setRange('all', this)">Tutto</button>
+    </div>
+  </div>
+  <div class="toolbar-group" style="margin-left:auto;">
+    <button class="btn btn-sm" onclick="goToday()">Oggi</button>
+  </div>
+</div>
+
+<!-- ─── GANTT ───────────────────────────────────────── -->
+<main style="display:none;" id="appMain">
+  <div id="printTitle"><span class="pt-name">GANTT PLANNER</span> · <span class="pt-date" id="printDate"></span></div>
+  <div class="gantt-wrap" id="ganttWrap">
+    <div class="gantt" id="gantt"></div>
+  </div>
+</main>
+
+<footer style="display:none;" id="appFooter">Giacomo Peli · Maggio 2026</footer>
+
+<!-- ─── MODALS ──────────────────────────────────────── -->
+<div class="modal-backdrop" id="commessaBackdrop">
+  <div class="modal">
+    <h3 id="commessaModalTitle">Nuova commessa</h3>
+    <div class="field">
+      <label>Nome / Codice commessa *</label>
+      <input id="commessaNome" placeholder="es. 2518 — Linea imballaggio">
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Inizio</label><input type="date" id="commessaStart"></div>
+      <div class="field"><label>Fine</label><input type="date" id="commessaEnd"></div>
+    </div>
+    <div class="field">
+      <label>Colore</label>
+      <input type="color" id="commessaColor" value="#0a84ff" style="height:38px;padding:3px;">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="commessaDelete" onclick="deleteCommessa()" style="margin-right:auto;display:none;">Elimina</button>
+      <button class="btn" onclick="closeModal('commessaBackdrop')">Annulla</button>
+      <button class="btn btn-accent" onclick="saveCommessa()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="userBackdrop">
+  <div class="modal">
+    <h3 id="userModalTitle">Nuovo utente</h3>
+    <div class="field-row">
+      <div class="field" style="flex:2;"><label>Nome *</label><input id="userNome" placeholder="es. Giacomo"></div>
+      <div class="field" style="flex:0 0 70px;"><label>Colore</label><input type="color" id="userColor" value="#ff9f0a" style="height:38px;padding:3px;"></div>
+    </div>
+    <div class="field"><label>Ruolo / Reparto</label><input id="userRuolo" placeholder="es. Capo officina"></div>
+    <div class="field"><label>Email</label><input id="userEmail" type="email" placeholder="opzionale"></div>
+    <div class="field"><label>Note</label><textarea id="userNote" rows="2"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="userDelete" onclick="deleteUser()" style="margin-right:auto;display:none;">Elimina</button>
+      <button class="btn" onclick="closeModal('userBackdrop')">Annulla</button>
+      <button class="btn btn-accent" onclick="saveUser()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SETTINGS PANEL ──────────────────────────────── -->
+<div class="modal-backdrop" id="settingsBackdrop">
+  <div class="modal" style="max-width:560px;">
+    <div style="display:flex;align-items:center;margin-bottom:16px;">
+      <h3 style="margin:0;">⚙ Impostazioni</h3>
+      <button class="btn btn-sm" style="margin-left:auto;" onclick="closeModal('settingsBackdrop')">Chiudi</button>
+    </div>
+
+    <div class="set-section">
+      <div class="set-head">
+        <span class="set-title">Utenti</span>
+        <button class="btn btn-sm btn-accent" onclick="openUserModal()">+ Aggiungi utente</button>
+      </div>
+      <div class="set-sub">Gestisci le persone a cui assegnare le azioni. Il colore identifica le iniziali sul Gantt.</div>
+      <div id="settingsUsersList" class="set-list"></div>
+    </div>
+
+    <div class="set-section">
+      <div class="set-head">
+        <span class="set-title">Commesse / Tag</span>
+        <button class="btn btn-sm btn-accent" onclick="openCommessaModal()">+ Aggiungi commessa</button>
+      </div>
+      <div class="set-sub">Associa un colore a ogni commessa. Le barre delle azioni collegate erediteranno questo colore.</div>
+      <div id="settingsCommesseList" class="set-list"></div>
+    </div>
+
+    <div class="set-section">
+      <div class="set-title" style="margin-bottom:8px;">Archivio</div>
+      <div class="set-sub">Crea un nuovo file vuoto oppure svuota i dati correnti.</div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <button class="btn btn-sm btn-danger" onclick="clearAll()">⊘ Svuota tutto</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── CONFIRM MODAL (sostituisce confirm() nativo) ── -->
+<div class="modal-backdrop" id="confirmBackdrop">
+  <div class="modal" style="max-width:380px;">
+    <h3 id="confirmTitle">Conferma</h3>
+    <div id="confirmMsg" style="font-size:13px;color:var(--text-dim);line-height:1.5;margin-bottom:6px;"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="resolveConfirm(false)">Annulla</button>
+      <button class="btn btn-danger" id="confirmOk" onclick="resolveConfirm(true)">Elimina</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="taskBackdrop">
+  <div class="modal">
+    <h3 id="taskModalTitle">Nuova azione</h3>
+    <div class="field"><label>Descrizione azione *</label><input id="taskNome" placeholder="es. Montaggio quadro elettrico"></div>
+    <div class="field-row">
+      <div class="field">
+        <label>Commessa *</label>
+        <select id="taskCommessa"></select>
+      </div>
+      <div class="field">
+        <label>Assegnato a</label>
+        <select id="taskAssignee"></select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Inizio *</label><input type="date" id="taskStart"></div>
+      <div class="field"><label>Fine *</label><input type="date" id="taskEnd"></div>
+    </div>
+    <div class="field">
+      <label>Avanzamento: <span id="taskProgVal">0</span>%</label>
+      <input type="range" id="taskProgress" min="0" max="100" value="0" oninput="document.getElementById('taskProgVal').textContent=this.value">
+    </div>
+    <div class="field"><label>Note</label><textarea id="taskNote" rows="2"></textarea></div>
+    <div class="field">
+      <label>Colore barra</label>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input type="color" id="taskColor" value="#0a84ff" style="height:38px;width:56px;padding:3px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);cursor:pointer;font-family:var(--font-sans);text-transform:none;letter-spacing:0;font-weight:400;">
+          <input type="checkbox" id="taskColorInherit" onchange="document.getElementById('taskColor').disabled=this.checked;">
+          Usa il colore della commessa
+        </label>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="taskDelete" onclick="deleteTask()" style="margin-right:auto;display:none;">Elimina</button>
+      <button class="btn" onclick="closeModal('taskBackdrop')">Annulla</button>
+      <button class="btn btn-accent" onclick="saveTask()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════════════
+let commesse = [];   // { id, nome, color, start, end }
+let users = [];      // { id, nome, color }
+let actions = [];    // { id, nome, commessaId, assigneeId, start, end, progress, note }
+
+let grouping = 'commessa';   // 'commessa' | 'assignee'
+let dayW = 34;
+let rangeMode = 'month';
+let editingCommessaId = null;
+let editingTaskId = null;
+const collapsed = new Set();
+
+const STORAGE_KEY = 'gantt_planner_v1';
+const THEME_KEY = 'gantt_theme_v1';
+
+// ════════════════════════════════════════════════════════════════════
+//  THEME
+// ════════════════════════════════════════════════════════════════════
+function applyTheme(theme) {
+  document.body.classList.toggle('theme-light', theme === 'light');
+  document.body.classList.toggle('theme-dark', theme === 'dark');
+  try { localStorage.setItem(THEME_KEY, theme); } catch(e) {}
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = theme === 'light' ? 'SKYWALKER' : 'VADER';
+}
+function toggleTheme() {
+  const next = document.body.classList.contains('theme-light') ? 'dark' : 'light';
+  applyTheme(next);
+}
+function initTheme() {
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === 'light' || saved === 'dark') return applyTheme(saved);
+  } catch(e) {}
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) return applyTheme('light');
+  applyTheme('dark');
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  PERSISTENCE  (File System Access API + localStorage fallback)
+// ════════════════════════════════════════════════════════════════════
+let fileHandle = null;
+let saveQueued = false;
+
+function setSaveIndicator(state) {
+  const el = document.getElementById('saveIndicator');
+  if (!el) return;
+  if (state === 'saved')      { el.textContent = '● salvato';        el.style.color = 'var(--text-muted)'; }
+  else if (state === 'saving'){ el.textContent = '○ salvataggio…';   el.style.color = 'var(--accent)'; }
+  else                        { el.textContent = '✕ errore';         el.style.color = '#c0392b'; }
+}
+
+function snapshot() {
+  return { version: 1, savedAt: new Date().toISOString(), commesse, users, actions };
+}
+
+async function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot())); } catch(e) {}
+  if (!fileHandle) { setSaveIndicator('saved'); return; }
+  if (saveQueued) return;
+  saveQueued = true;
+  setSaveIndicator('saving');
+  await new Promise(r => setTimeout(r, 150));
+  saveQueued = false;
+  try {
+    const writable = await fileHandle.createWritable();
+    await writable.write(JSON.stringify(snapshot(), null, 2));
+    await writable.close();
+    setSaveIndicator('saved');
+  } catch(e) { setSaveIndicator('error'); }
+}
+
+function loadFromData(data) {
+  commesse = data.commesse || [];
+  users    = data.users || [];
+  actions  = data.actions || [];
+}
+
+async function openExistingFile() {
+  if (!window.showOpenFilePicker) { loadFromLocalStorage(); enterApp(); return; }
+  try {
+    const [handle] = await window.showOpenFilePicker({
+      types: [{ description: 'GANTT JSON', accept: { 'application/json': ['.json'] } }]
+    });
+    fileHandle = handle;
+    const text = await (await handle.getFile()).text();
+    try { loadFromData(JSON.parse(text)); } catch(e) { loadFromData({}); }
+    enterApp();
+    setSaveIndicator('saved');
+  } catch(e) { if (e.name !== 'AbortError') setSaveIndicator('error'); }
+}
+
+async function createNewFile() {
+  if (!window.showSaveFilePicker) { loadFromData({}); enterApp(); seedDemo(); return; }
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: 'gantt.json',
+      types: [{ description: 'GANTT JSON', accept: { 'application/json': ['.json'] } }]
+    });
+    fileHandle = handle;
+    loadFromData({});
+    seedDemo();
+    await save();
+    enterApp();
+  } catch(e) { if (e.name !== 'AbortError') setSaveIndicator('error'); }
+}
+
+function loadFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) loadFromData(JSON.parse(raw));
+  } catch(e) { loadFromData({}); }
+}
+
+// Backup / Import manuali
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(snapshot(), null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'gantt_backup_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function importJSON() {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.json,application/json';
+  inp.onchange = () => {
+    const file = inp.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        const msg = `Importare:\n• ${(data.commesse||[]).length} commesse\n• ${(data.users||[]).length} utenti\n• ${(data.actions||[]).length} azioni\n\nSostituiranno i dati attuali.`;
+        if (confirm(msg)) { loadFromData(data); save(); render(); }
+      } catch(e) { alert('File non valido.'); }
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
+
+// Export CSV — una riga per azione, con tutti i campi leggibili
+function exportCSV() {
+  const esc = v => {
+    const s = (v == null ? '' : String(v));
+    return /[";\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  };
+  const header = ['Commessa','Azione','Assegnato a','Inizio','Fine','Giorni','Avanzamento %','Note'];
+  const rows = actions.map(a => {
+    const c = commesse.find(x=>x.id===a.commessaId);
+    const u = users.find(x=>x.id===a.assigneeId);
+    const s = parseDate(a.start), e = parseDate(a.end);
+    const giorni = (s && e) ? (dayDiff(s, e) + 1) : '';
+    return [
+      c ? c.nome : '', a.nome, u ? u.nome : '',
+      a.start || '', a.end || '', giorni,
+      a.progress || 0, a.note || ''
+    ].map(esc).join(';');
+  });
+  // BOM + ; come separatore → si apre correttamente in Excel italiano
+  const csv = '\uFEFF' + [header.map(esc).join(';'), ...rows].join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'gantt_export_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// Stampa: espande tutti i gruppi e adatta la vista, poi apre la finestra di stampa
+function printGantt() {
+  const pd = document.getElementById('printDate');
+  if (pd) pd.textContent = 'stampato il ' + new Date().toLocaleDateString('it-IT', {day:'2-digit',month:'long',year:'numeric'});
+  const restore = new Set(collapsed);   // memorizza i gruppi chiusi
+  collapsed.clear();                     // espandi tutto per la stampa
+  render();
+  document.body.classList.add('printing');
+  const cleanup = () => {
+    document.body.classList.remove('printing');
+    collapsed.clear(); restore.forEach(k => collapsed.add(k));
+    render();
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  setTimeout(() => window.print(), 120);
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════════════════════════════
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function parseDate(s) { const d = new Date(s + 'T00:00:00'); return isNaN(d) ? null : d; }
+function fmtISO(d) { return d.toISOString().slice(0,10); }
+function dayDiff(a, b) { return Math.round((b - a) / 86400000); }
+function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate()+n); return x; }
+function startOfDay(d) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
+const MONTHS = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+const DOW = ['Do','Lu','Ma','Me','Gi','Ve','Sa'];
+function initials(name) { return name.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
+
+// Calcola il range di date dell'intero progetto
+function projectRange() {
+  let dates = [];
+  actions.forEach(a => { const s=parseDate(a.start), e=parseDate(a.end); if(s)dates.push(s); if(e)dates.push(e); });
+  commesse.forEach(c => { const s=parseDate(c.start), e=parseDate(c.end); if(s)dates.push(s); if(e)dates.push(e); });
+  const today = startOfDay(new Date());
+  if (dates.length === 0) return { min: addDays(today,-3), max: addDays(today,21) };
+  let min = new Date(Math.min(...dates)), max = new Date(Math.max(...dates));
+  min = addDays(min, -3); max = addDays(max, 3);
+  if (rangeMode === 'month') max = addDays(min, 34);
+  else if (rangeMode === 'quarter') max = addDays(min, 95);
+  return { min: startOfDay(min), max: startOfDay(max) };
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════════════════════════════
+function setGrouping(g, el) {
+  grouping = g;
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+function setZoom(w, el) {
+  dayW = w; document.documentElement.style.setProperty('--day-w', w+'px');
+  document.querySelectorAll('#zoomSeg button').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active'); render();
+}
+function setRange(m, el) {
+  rangeMode = m;
+  document.querySelectorAll('#rangeSeg button').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active'); render();
+}
+function goToday() {
+  const wrap = document.getElementById('ganttWrap');
+  const line = document.querySelector('.today-line');
+  if (line) wrap.scrollLeft = line.offsetLeft - wrap.clientWidth/2;
+}
+
+function render() {
+  const g = document.getElementById('gantt');
+  const { min, max } = projectRange();
+  const totalDays = dayDiff(min, max) + 1;
+  const today = startOfDay(new Date());
+  const search = document.getElementById('searchInput').value.toLowerCase().trim();
+
+  // ── header timeline ──
+  let monthsHTML = '', daysHTML = '';
+  let mi = 0;
+  while (mi < totalDays) {
+    const d = addDays(min, mi);
+    let span = 0, m = d.getMonth();
+    for (let k = mi; k < totalDays; k++) { if (addDays(min,k).getMonth() === m) span++; else break; }
+    monthsHTML += `<div class="month-cell" style="width:${span*dayW}px;min-width:${span*dayW}px;">${MONTHS[m]} ${d.getFullYear()}</div>`;
+    mi += span;
+  }
+  for (let i = 0; i < totalDays; i++) {
+    const d = addDays(min, i);
+    const wknd = (d.getDay()===0||d.getDay()===6) ? ' weekend' : '';
+    const isToday = d.getTime() === today.getTime() ? ' today' : '';
+    daysHTML += `<div class="day-cell${wknd}${isToday}"><span class="dow">${DOW[d.getDay()]}</span>${d.getDate()}</div>`;
+  }
+
+  const trackW = totalDays * dayW;
+  const todayOffset = (today >= min && today <= max) ? (dayDiff(min, today) * dayW + dayW/2) : null;
+
+  // ── grouping ──
+  let filtered = actions.filter(a => {
+    if (!search) return true;
+    const c = commesse.find(x=>x.id===a.commessaId);
+    const u = users.find(x=>x.id===a.assigneeId);
+    return (a.nome||'').toLowerCase().includes(search)
+        || (c&&c.nome.toLowerCase().includes(search))
+        || (u&&u.nome.toLowerCase().includes(search))
+        || (a.note||'').toLowerCase().includes(search);
+  });
+
+  let groups = [];
+  if (grouping === 'commessa') {
+    commesse.forEach(c => {
+      const items = filtered.filter(a => a.commessaId === c.id);
+      groups.push({ key:c.id, name:c.nome, color:c.color, items });
+    });
+    const orphan = filtered.filter(a => !commesse.find(c=>c.id===a.commessaId));
+    if (orphan.length) groups.push({ key:'_none', name:'Senza commessa', color:'#636366', items:orphan });
+  } else {
+    users.forEach(u => {
+      const items = filtered.filter(a => a.assigneeId === u.id);
+      groups.push({ key:u.id, name:u.nome, color:u.color, items });
+    });
+    const orphan = filtered.filter(a => !users.find(u=>u.id===a.assigneeId));
+    if (orphan.length) groups.push({ key:'_none', name:'Non assegnate', color:'#636366', items:orphan });
+  }
+  groups = groups.filter(gr => gr.items.length > 0 || grouping==='commessa');
+
+  // ── body ──
+  let bodyHTML = '';
+  if (groups.length === 0) {
+    bodyHTML = `<div class="empty-state">Nessuna azione pianificata. Crea una commessa e aggiungi le azioni.</div>`;
+  } else {
+    groups.forEach(gr => {
+      const isCol = collapsed.has(gr.key);
+      bodyHTML += `<div class="grp-head ${isCol?'collapsed':''}" onclick="toggleGroup('${gr.key}')">
+        <span class="caret">▼</span>
+        <span class="grp-dot" style="background:${gr.color}"></span>
+        <span class="grp-name">${escapeHtml(gr.name)}</span>
+        <span class="grp-meta">${gr.items.length} azioni</span>
+      </div>`;
+      if (!isCol) {
+        gr.items.forEach(a => { bodyHTML += rowHTML(a, min, trackW); });
+      }
+    });
+  }
+
+  g.innerHTML = `
+    <div class="timeline-head">
+      <div class="corner">${grouping==='commessa'?'Commessa / Azione':'Utente / Azione'}</div>
+      <div class="months-days">
+        <div class="months">${monthsHTML}</div>
+        <div class="days">${daysHTML}</div>
+      </div>
+    </div>
+    <div class="gantt-body" style="position:relative;">
+      ${bodyHTML}
+      ${todayOffset!==null ? `<div class="today-line" style="left:calc(var(--label-w) + ${todayOffset}px);"></div>` : ''}
+    </div>`;
+}
+
+function rowHTML(a, min, trackW) {
+  const s = parseDate(a.start), e = parseDate(a.end);
+  let bar = '';
+  if (s && e) {
+    const offset = dayDiff(min, s) * dayW;
+    const width = (dayDiff(s, e) + 1) * dayW;
+    const c = commesse.find(x=>x.id===a.commessaId);
+    const color = a.color || (c && c.color) || 'var(--accent)';
+    const prog = Math.max(0, Math.min(100, a.progress||0));
+    bar = `<div class="bar" data-id="${a.id}" style="left:${offset}px;width:${Math.max(width,dayW)}px;background:${color};">
+             <div class="bar-progress" style="width:${prog}%;"></div>
+             <div class="bar-handle left" data-mode="resize-left"></div>
+             <span class="bar-label">${escapeHtml(a.nome)}${prog?` · ${prog}%`:''}</span>
+             <div class="bar-handle right" data-mode="resize-right"></div>
+           </div>`;
+  }
+  const u = users.find(x=>x.id===a.assigneeId);
+  const av = u ? `<span class="assignee" style="background:${u.color}" title="${escapeHtml(u.nome)}">${initials(u.nome)}</span>` : '';
+  return `<div class="row">
+    <div class="row-label" onclick="openTaskModal('${a.id}')">${av}<span class="task-name">${escapeHtml(a.nome)}</span></div>
+    <div class="row-track" style="width:${trackW}px;">
+      <div class="grid-bg"></div>${bar}
+    </div>
+  </div>`;
+}
+
+function toggleGroup(k) { if (collapsed.has(k)) collapsed.delete(k); else collapsed.add(k); render(); }
+function escapeHtml(s) { return (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// ════════════════════════════════════════════════════════════════════
+//  MODALS
+// ════════════════════════════════════════════════════════════════════
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// Conferma interna (non bloccabile dal browser come confirm() nativo)
+let _confirmResolve = null;
+function confirmModal(message, okLabel = 'Elimina') {
+  return new Promise(resolve => {
+    _confirmResolve = resolve;
+    document.getElementById('confirmMsg').textContent = message;
+    document.getElementById('confirmOk').textContent = okLabel;
+    document.getElementById('confirmBackdrop').classList.add('open');
+  });
+}
+function resolveConfirm(val) {
+  document.getElementById('confirmBackdrop').classList.remove('open');
+  if (_confirmResolve) { _confirmResolve(val); _confirmResolve = null; }
+}
+
+function openSettings() { renderSettings(); document.getElementById('settingsBackdrop').classList.add('open'); }
+function renderSettings() {
+  const ul = document.getElementById('settingsUsersList');
+  if (ul) {
+    ul.innerHTML = users.length ? users.map(u => {
+      const n = actions.filter(a=>a.assigneeId===u.id).length;
+      const meta = [u.ruolo, n+' azioni'].filter(Boolean).join(' · ');
+      return `<div class="set-item" onclick="openUserModal('${u.id}')">
+        <span class="set-swatch" style="background:${u.color}"></span>
+        <span class="set-item-name">${escapeHtml(u.nome)}</span>
+        <span class="set-item-meta">${escapeHtml(meta)}</span>
+        <button class="set-del" title="Elimina" onclick="event.stopPropagation();removeUser('${u.id}')">✕</button>
+      </div>`;
+    }).join('') : '<div class="set-empty">Nessun utente. Aggiungine uno.</div>';
+  }
+  const cl = document.getElementById('settingsCommesseList');
+  if (cl) {
+    cl.innerHTML = commesse.length ? commesse.map(c => {
+      const n = actions.filter(a=>a.commessaId===c.id).length;
+      return `<div class="set-item" onclick="openCommessaModal('${c.id}')">
+        <span class="set-swatch" style="background:${c.color}"></span>
+        <span class="set-item-name">${escapeHtml(c.nome)}</span>
+        <span class="set-item-meta">${n} azioni</span>
+        <button class="set-del" title="Elimina" onclick="event.stopPropagation();removeCommessa('${c.id}')">✕</button>
+      </div>`;
+    }).join('') : '<div class="set-empty">Nessuna commessa. Aggiungine una.</div>';
+  }
+}
+async function clearAll() {
+  if (!await confirmModal('Svuotare tutti i dati (commesse, utenti, azioni)? L\'operazione non è reversibile.', 'Svuota tutto')) return;
+  commesse = []; users = []; actions = []; collapsed.clear();
+  save(); renderSettings(); render();
+}
+
+function openCommessaModal(id) {
+  editingCommessaId = id || null;
+  const c = id ? commesse.find(x=>x.id===id) : null;
+  document.getElementById('commessaModalTitle').textContent = c ? 'Modifica commessa' : 'Nuova commessa';
+  document.getElementById('commessaNome').value = c ? c.nome : '';
+  document.getElementById('commessaStart').value = c ? (c.start||'') : '';
+  document.getElementById('commessaEnd').value = c ? (c.end||'') : '';
+  document.getElementById('commessaColor').value = c ? c.color : pickColor(commesse.length);
+  document.getElementById('commessaDelete').style.display = c ? '' : 'none';
+  document.getElementById('commessaBackdrop').classList.add('open');
+}
+function saveCommessa() {
+  const nome = document.getElementById('commessaNome').value.trim();
+  if (!nome) { alert('Inserisci il nome della commessa.'); return; }
+  const obj = {
+    nome,
+    color: document.getElementById('commessaColor').value,
+    start: document.getElementById('commessaStart').value,
+    end: document.getElementById('commessaEnd').value
+  };
+  if (editingCommessaId) Object.assign(commesse.find(x=>x.id===editingCommessaId), obj);
+  else commesse.push({ id: uid(), ...obj });
+  closeModal('commessaBackdrop'); save(); renderSettings(); render();
+}
+async function deleteCommessa() {
+  if (!await confirmModal('Eliminare la commessa? Le azioni collegate resteranno "senza commessa".')) return;
+  commesse = commesse.filter(c=>c.id!==editingCommessaId);
+  actions.forEach(a => { if (a.commessaId===editingCommessaId) a.commessaId=null; });
+  closeModal('commessaBackdrop'); save(); renderSettings(); render();
+}
+
+let editingUserId = null;
+function openUserModal(id) {
+  editingUserId = id || null;
+  const u = id ? users.find(x=>x.id===id) : null;
+  document.getElementById('userModalTitle').textContent = u ? 'Modifica utente' : 'Nuovo utente';
+  document.getElementById('userNome').value = u ? u.nome : '';
+  document.getElementById('userColor').value = u ? u.color : pickColor(users.length, true);
+  document.getElementById('userRuolo').value = u ? (u.ruolo||'') : '';
+  document.getElementById('userEmail').value = u ? (u.email||'') : '';
+  document.getElementById('userNote').value = u ? (u.note||'') : '';
+  document.getElementById('userDelete').style.display = u ? '' : 'none';
+  document.getElementById('userBackdrop').classList.add('open');
+}
+function saveUser() {
+  const nome = document.getElementById('userNome').value.trim();
+  if (!nome) { alert('Inserisci il nome utente.'); return; }
+  const obj = {
+    nome,
+    color: document.getElementById('userColor').value,
+    ruolo: document.getElementById('userRuolo').value.trim(),
+    email: document.getElementById('userEmail').value.trim(),
+    note: document.getElementById('userNote').value.trim()
+  };
+  if (editingUserId) Object.assign(users.find(x=>x.id===editingUserId), obj);
+  else users.push({ id: uid(), ...obj });
+  closeModal('userBackdrop'); save(); renderSettings(); render();
+}
+async function deleteUser() {
+  if (!await confirmModal('Eliminare l\'utente? Le azioni assegnate resteranno "non assegnate".')) return;
+  users = users.filter(u=>u.id!==editingUserId);
+  actions.forEach(a => { if (a.assigneeId===editingUserId) a.assigneeId=null; });
+  closeModal('userBackdrop'); save(); renderSettings(); render();
+}
+async function removeUser(id) {
+  const u = users.find(x=>x.id===id); if (!u) return;
+  if (!await confirmModal(`Eliminare l'utente "${u.nome}"? Le azioni assegnate resteranno "non assegnate".`)) return;
+  users = users.filter(x=>x.id!==id);
+  actions.forEach(a => { if (a.assigneeId===id) a.assigneeId=null; });
+  save(); renderSettings(); render();
+}
+async function removeCommessa(id) {
+  const c = commesse.find(x=>x.id===id); if (!c) return;
+  if (!await confirmModal(`Eliminare la commessa "${c.nome}"? Le azioni collegate resteranno "senza commessa".`)) return;
+  commesse = commesse.filter(x=>x.id!==id);
+  actions.forEach(a => { if (a.commessaId===id) a.commessaId=null; });
+  save(); renderSettings(); render();
+}
+
+function openTaskModal(id) {
+  editingTaskId = id || null;
+  const a = id ? actions.find(x=>x.id===id) : null;
+  document.getElementById('taskModalTitle').textContent = a ? 'Modifica azione' : 'Nuova azione';
+  // popola select
+  const selC = document.getElementById('taskCommessa');
+  selC.innerHTML = '<option value="">— Nessuna —</option>' + commesse.map(c=>`<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
+  const selU = document.getElementById('taskAssignee');
+  selU.innerHTML = '<option value="">— Nessuno —</option>' + users.map(u=>`<option value="${u.id}">${escapeHtml(u.nome)}</option>`).join('');
+
+  const today = fmtISO(startOfDay(new Date()));
+  document.getElementById('taskNome').value = a ? a.nome : '';
+  selC.value = a ? (a.commessaId||'') : '';
+  selU.value = a ? (a.assigneeId||'') : '';
+  document.getElementById('taskStart').value = a ? a.start : today;
+  document.getElementById('taskEnd').value = a ? a.end : today;
+  document.getElementById('taskProgress').value = a ? (a.progress||0) : 0;
+  document.getElementById('taskProgVal').textContent = a ? (a.progress||0) : 0;
+  document.getElementById('taskNote').value = a ? (a.note||'') : '';
+  // Colore: se l'azione ha un colore proprio lo mostra, altrimenti eredita dalla commessa
+  const inheritChk = document.getElementById('taskColorInherit');
+  const colorInput = document.getElementById('taskColor');
+  const hasOwn = !!(a && a.color);
+  inheritChk.checked = !hasOwn;
+  colorInput.disabled = !hasOwn;
+  if (hasOwn) {
+    colorInput.value = a.color;
+  } else {
+    const c = a ? commesse.find(x=>x.id===a.commessaId) : null;
+    colorInput.value = (c && c.color) ? c.color : '#0a84ff';
+  }
+  document.getElementById('taskDelete').style.display = a ? '' : 'none';
+  document.getElementById('taskBackdrop').classList.add('open');
+}
+function saveTask() {
+  const nome = document.getElementById('taskNome').value.trim();
+  const start = document.getElementById('taskStart').value;
+  const end = document.getElementById('taskEnd').value;
+  if (!nome) { alert('Inserisci la descrizione.'); return; }
+  if (!start || !end) { alert('Inserisci date di inizio e fine.'); return; }
+  if (parseDate(end) < parseDate(start)) { alert('La fine non può precedere l\'inizio.'); return; }
+  const obj = {
+    nome,
+    commessaId: document.getElementById('taskCommessa').value || null,
+    assigneeId: document.getElementById('taskAssignee').value || null,
+    start, end,
+    progress: parseInt(document.getElementById('taskProgress').value,10) || 0,
+    note: document.getElementById('taskNote').value.trim(),
+    color: document.getElementById('taskColorInherit').checked ? null : document.getElementById('taskColor').value
+  };
+  if (editingTaskId) Object.assign(actions.find(x=>x.id===editingTaskId), obj);
+  else actions.push({ id: uid(), ...obj });
+  closeModal('taskBackdrop'); save(); render();
+}
+async function deleteTask() {
+  if (!await confirmModal('Eliminare questa azione?')) return;
+  actions = actions.filter(a=>a.id!==editingTaskId);
+  closeModal('taskBackdrop'); save(); render();
+}
+
+const PALETTE = ['#0a84ff','#ff453a','#ff9f0a','#30d158','#bf5af2','#64d2ff','#ff6482','#ffd60a'];
+function pickColor(i, alt) { return PALETTE[(alt? i+3 : i) % PALETTE.length]; }
+
+// ════════════════════════════════════════════════════════════════════
+//  DEMO SEED + BOOT
+// ════════════════════════════════════════════════════════════════════
+function seedDemo() {
+  const t = startOfDay(new Date());
+  const c1 = { id: uid(), nome: '2518 — Linea imballaggio', color:'#0a84ff', start:'', end:'' };
+  const c2 = { id: uid(), nome: '2602 — Revamping nastro', color:'#30d158', start:'', end:'' };
+  commesse = [c1, c2];
+  const u1 = { id: uid(), nome:'Giacomo', color:'#ff9f0a', ruolo:'', email:'', note:'' };
+  users = [u1];
+  actions = [
+    { id:uid(), nome:'Progettazione meccanica', commessaId:c1.id, assigneeId:u1.id, start:fmtISO(addDays(t,-2)), end:fmtISO(addDays(t,3)), progress:60, note:'' },
+    { id:uid(), nome:'Montaggio quadro elettrico', commessaId:c1.id, assigneeId:u1.id, start:fmtISO(addDays(t,4)), end:fmtISO(addDays(t,9)), progress:0, note:'' },
+    { id:uid(), nome:'Collaudo', commessaId:c1.id, assigneeId:u1.id, start:fmtISO(addDays(t,10)), end:fmtISO(addDays(t,13)), progress:0, note:'' },
+    { id:uid(), nome:'Smontaggio nastro esistente', commessaId:c2.id, assigneeId:u1.id, start:fmtISO(addDays(t,0)), end:fmtISO(addDays(t,2)), progress:25, note:'' },
+    { id:uid(), nome:'Installazione nuovo gruppo', commessaId:c2.id, assigneeId:u1.id, start:fmtISO(addDays(t,3)), end:fmtISO(addDays(t,8)), progress:0, note:'' }
+  ];
+}
+
+function enterApp() {
+  document.getElementById('fileScreen').style.display = 'none';
+  document.getElementById('appHeader').style.display = 'flex';
+  document.getElementById('appToolbar').style.display = 'flex';
+  document.getElementById('appMain').style.display = 'flex';
+  document.getElementById('appFooter').style.display = 'block';
+  render();
+  setTimeout(goToday, 50);
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  DRAG & DROP sulle barre (sposta / ridimensiona date)
+// ════════════════════════════════════════════════════════════════════
+let drag = null;
+
+function onBarMouseDown(e) {
+  const handle = e.target.closest('.bar-handle');
+  const barEl = e.target.closest('.bar');
+  if (!barEl) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const id = barEl.dataset.id;
+  const a = actions.find(x=>x.id===id);
+  if (!a) return;
+
+  drag = {
+    id,
+    mode: handle ? handle.dataset.mode : 'move',
+    startX: e.clientX,
+    origStart: parseDate(a.start),
+    origEnd: parseDate(a.end),
+    rangeMin: projectRange().min,
+    barEl,
+    moved: false
+  };
+  barEl.classList.add('dragging');
+
+  const ghost = document.createElement('div');
+  ghost.className = 'drag-ghost';
+  ghost.id = 'dragGhost';
+  document.body.appendChild(ghost);
+  updateGhost(e, a);
+
+  document.addEventListener('mousemove', onBarMouseMove);
+  document.addEventListener('mouseup', onBarMouseUp);
+}
+
+function updateGhost(e, a) {
+  const g = document.getElementById('dragGhost');
+  if (!g) return;
+  g.style.left = (e.clientX + 14) + 'px';
+  g.style.top  = (e.clientY - 10) + 'px';
+  const fmt = d => d ? d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}) : '—';
+  g.textContent = `${fmt(parseDate(a.start))} → ${fmt(parseDate(a.end))}`;
+}
+
+function onBarMouseMove(e) {
+  if (!drag) return;
+  const a = actions.find(x=>x.id===drag.id);
+  if (!a) return;
+  const deltaDays = Math.round((e.clientX - drag.startX) / dayW);
+  if (deltaDays !== 0) drag.moved = true;
+
+  if (drag.mode === 'move') {
+    a.start = fmtISO(addDays(drag.origStart, deltaDays));
+    a.end   = fmtISO(addDays(drag.origEnd, deltaDays));
+  } else if (drag.mode === 'resize-left') {
+    let ns = addDays(drag.origStart, deltaDays);
+    if (ns > drag.origEnd) ns = drag.origEnd;       // almeno 1 giorno
+    a.start = fmtISO(ns);
+  } else if (drag.mode === 'resize-right') {
+    let ne = addDays(drag.origEnd, deltaDays);
+    if (ne < drag.origStart) ne = drag.origStart;
+    a.end = fmtISO(ne);
+  }
+
+  // aggiorna solo la barra interessata, senza re-render completo (più fluido)
+  const min = drag.rangeMin;
+  const offset = dayDiff(min, parseDate(a.start)) * dayW;
+  const width  = (dayDiff(parseDate(a.start), parseDate(a.end)) + 1) * dayW;
+  drag.barEl.style.left = offset + 'px';
+  drag.barEl.style.width = Math.max(width, dayW) + 'px';
+  updateGhost(e, a);
+}
+
+function onBarMouseUp(e) {
+  if (!drag) return;
+  drag.barEl.classList.remove('dragging');
+  const ghost = document.getElementById('dragGhost');
+  if (ghost) ghost.remove();
+  document.removeEventListener('mousemove', onBarMouseMove);
+  document.removeEventListener('mouseup', onBarMouseUp);
+
+  const wasMoved = drag.moved;
+  const id = drag.id;
+  drag = null;
+
+  if (wasMoved) { save(); render(); }
+  else { openTaskModal(id); }   // click senza trascinamento = modifica
+}
+
+document.getElementById('gantt').addEventListener('mousedown', onBarMouseDown);
+
+// ════════════════════════════════════════════════════════════════════
+document.querySelectorAll('.modal-backdrop').forEach(b => {
+  b.addEventListener('click', e => { if (e.target === b) b.classList.remove('open'); });
+});
+
+initTheme();
+</script>
+</body>
+</html>
